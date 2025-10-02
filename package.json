@@ -17,5 +17,10 @@
   "bugs": {
     "url": "https://github.com/mlamont/pear/issues"
   },
-  "homepage": "https://github.com/mlamont/pear#readme"
+  "homepage": "https://github.com/mlamont/pear#readme",
+  "devDependencies": {
+    "@openzeppelin/contracts-upgradeable": "^5.4.0",
+    "@openzeppelin/hardhat-upgrades": "^3.9.1",
+    "hardhat": "^2.26.3"
+  }
 }
