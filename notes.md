@@ -52,8 +52,6 @@
   ```
 - **DO:RUN** script (upgradeProxy):
   - `npx hardhat run --network localhost scripts/upgrade_box.js`
-- **QUESTIONS**
-  - So do we know the addresses of the old LLL, new LLL, and AAA???
 
 ## how upgrades work
 
@@ -73,8 +71,7 @@
   - but have a constructor anyway, to leave the contract in an initialized state, mitigating certain attacks
     - `constructor() initializer {}`
 - when deploying:
-  - default initializing function is `initialize`, else specify the `initializer` function, and
-  - provide AAA address
+  - default initializing function is `initialize`, else specify the `initializer` function
 
 ```
 // scripts/deploy_upgradeable_adminbox.js
@@ -131,7 +128,7 @@ main();
 - validates that LLLs are upgrade-safe
 - keeps track of all the LLL contracts (not PPPs) you have deployed in an .openzeppelin folder in the project root, as well as the AAA
 - looks like the 2 functions to use are `deployProxy` & `upgradeProxy`
-- UUPS proxies rely on an \_authorizeUpgrade function to be overridden to include access restriction to the upgrade mechanism
+- UUPS proxies rely on an `_authorizeUpgrade` function to be overridden to include access restriction to the upgrade mechanism
   - b/c UUPS proxies don't use admin addresses
 
 # Using w/ HH
@@ -172,7 +169,7 @@ describe("Box", function()
   - unless a `constant`, declare at top, but initialize in `initialize`
 - an uninitialized LLL is vulnerable
   - To prevent the implementation contract from being used, you should invoke the `_disableInitializers` function in the constructor to automatically lock it when it is deployed
-- unsafe operations: `selfdestruct` & `delegatecall`
+- unsafe operations (in the LLL): `selfdestruct` & `delegatecall`
 
 # Proxy Upgrade Pattern
 
@@ -185,9 +182,19 @@ describe("Box", function()
 # Open Questions
 
 - Does V2 need `initialize()`?
+  - ...may want to test this: making V2s w/o this f'n and see if anything breaks...
 - How to end upgradeability?
 - Where do I find all 3 contracts, both in local & testnet blockchains?
+  - ...to possibly see 3 contracts on Sepolia, I'll need HH-verify working, and deploy to Sepolia, w/ HHConfigJS updated...
+- So do we know the addresses of the old LLL, new LLL, and AAA???
+- ~~How do I resolve these dependency tree issues? (HH-verify) (HH-ethers)~~
+  - ~~possibly do `npm uninstall ...` then `npm install ...`~~
+  - _installed earlier versions of these packages_
+- Where are we keeping/archiving the addresses of the old LLLs?
 
 # Other Notes
 
-- so it looks like only the first LLL's `initialize` is run, and not the subsequent LLLs'
+- so it looks like only the first LLL's `initialize` is run (per deployProxy), and not the subsequent LLLs' (per upgradeProxy)
+- had to install previous versions of packages, matching those for the Orange project:
+  - `npm install --save-dev @nomicfoundation/hardhat-ethers@3.1.0 ethers`
+  - `npm install --save-dev @nomicfoundation/hardhat-verify@2.1.1`
