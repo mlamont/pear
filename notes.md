@@ -4,6 +4,7 @@
 - 3 types of contract: {admin, proxy, logic} {AAA, PPP, LLL}
 - **DO:INSTALL** the upgrades plugin:
   - `npm install --save-dev @openzeppelin/hardhat-upgrades`
+  - `npm install --save-dev @openzeppelin/contracts-upgradeable`
 - **DO:UPDATE** hardhat.config.js:
   - `require("@nomicfoundation/hardhat-ethers"); require('@openzeppelin/hardhat-upgrades');`
 
@@ -180,3 +181,13 @@ describe("Box", function()
 - a form of `delegatecall` is in the PPP's `fallback()`
 - PPP uses 'unstructured storage': semi-random slots used for PPP, avoiding collisions with LLL's storage slots
 - It's on the user to have new LLLs extend previous LLLs, basically: new LLLs append state variables to old LLLs
+
+# Open Questions
+
+- Does V2 need `initialize()`?
+- How to end upgradeability?
+- Where do I find all 3 contracts, both in local & testnet blockchains?
+
+# Other Notes
+
+- so it looks like only the first LLL's `initialize` is run, and not the subsequent LLLs'
