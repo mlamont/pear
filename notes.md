@@ -93,8 +93,9 @@ main();
 
 ## limitations: upgrading
 
-- cannot change storage layout
+- cannot change storage variables' layout (or their types)
   - can only add storage variables, and only after the already declared ones
+  - (and y'CAN rename 'em, but they'll keep the same values pre-upgrade)
 - but can totally change functions & events
 
 # OZ HH Upgrades API
@@ -157,4 +158,22 @@ describe("Box", function()
 # Writing Upgradeable Contracts
 
 - link: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
+- cannot use a `constructor`, so
+  - use `initialize`,
+  - ensure it's called only once (OZ provides a base contract for this),
+    - `initializer` modifier can only be called once even when using inheritance
+  - manually call the initializers of all parent contracts
+    - parent contracts should use the `onlyInitializing` modifier
+- Whether using OpenZeppelin Contracts or another smart contract library, always make sure that the package is set up to handle upgradeable contracts.
+  - not: @openzeppelin/contracts/token/ERC20/ERC20.sol
+  - but: @openzeppelin/contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol
+- state variables (in upgradeable contracts):
+  - unless a `constant`, declare at top, but initialize in `initialize`
+- an uninitialized LLL is vulnerable
+  - To prevent the implementation contract from being used, you should invoke the `_disableInitializers` function in the constructor to automatically lock it when it is deployed
+- unsafe operations: `selfdestruct` & `delegatecall`
+
+# Proxy Upgrade Pattern
+
+- link: https://docs.openzeppelin.com/upgrades-plugins/proxies
 - asdf
