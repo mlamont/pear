@@ -176,4 +176,7 @@ describe("Box", function()
 # Proxy Upgrade Pattern
 
 - link: https://docs.openzeppelin.com/upgrades-plugins/proxies
-- asdf
+- PPP = "access point"
+- a form of `delegatecall` is in the PPP's `fallback()`
+- PPP uses 'unstructured storage': semi-random slots used for PPP, avoiding collisions with LLL's storage slots
+- It's on the user to have new LLLs extend previous LLLs, basically: new LLLs append state variables to old LLLs
