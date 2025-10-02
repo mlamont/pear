@@ -1,4 +1,5 @@
 /** @type import('hardhat/config').HardhatUserConfig */
+
 require("@nomicfoundation/hardhat-ethers");
 require("@openzeppelin/hardhat-upgrades");
 
