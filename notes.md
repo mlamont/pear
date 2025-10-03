@@ -182,15 +182,17 @@ describe("Box", function()
 # Open Questions
 
 - Does V2 need `initialize()`?
-  - ...may want to test this: making V2s w/o this f'n and see if anything breaks...
+  - **DO:TEST**: making V2s w/o this f'n and see if anything breaks
 - How to end upgradeability?
+  - **DO:INV**
 - Where do I find all 3 contracts, both in local & testnet blockchains?
-  - ...to possibly see 3 contracts on Sepolia, I'll need HH-verify working, and deploy to Sepolia, w/ HHConfigJS updated...
-- So do we know the addresses of the old LLL, new LLL, and AAA???
+  - ~~...to possibly see 3 contracts on Sepolia, I'll need HH-verify working...~~
+  - **DO:TEST**: deploy to Sepolia, w/ HHConfigJS updated
+- ~~ So do we know the addresses of the old LLL, new LLL, and AAA???~~
 - ~~How do I resolve these dependency tree issues? (HH-verify) (HH-ethers)~~
   - ~~possibly do `npm uninstall ...` then `npm install ...`~~
   - _installed earlier versions of these packages_
-- Where are we keeping/archiving the addresses of the old LLLs?
+- ~~Where are we keeping/archiving the addresses of the old LLLs?~~
 
 # Other Notes
 
