@@ -200,3 +200,14 @@ describe("Box", function()
 - had to install previous versions of packages, matching those for the Orange project:
   - `npm install --save-dev @nomicfoundation/hardhat-ethers@3.1.0 ethers`
   - `npm install --save-dev @nomicfoundation/hardhat-verify@2.1.1`
+
+# UUPS (ERC-1822)
+
+- link: https://rareskills.io/post/uups-proxy
+- (Transparent Upgradeable Proxy pattern: "TUP")
+- unlike TUP: solves 'function selector clashes' by not having public functions in PPP
+- unlike TUP: no need for an AdminProxy
+- unlike TUP: comparing `msg.sender` to admin on just the `_upgradeLogic()` call (not every call)
+- can mod upgrade mechanism, as upgrade LLL: add complexity, add voting, add timing
+  - also: can nix upgrade mechanism, with an LLL upgrade
+- asdf
