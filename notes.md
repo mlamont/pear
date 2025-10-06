@@ -193,6 +193,8 @@ describe("Box", function()
   - ~~possibly do `npm uninstall ...` then `npm install ...`~~
   - _installed earlier versions of these packages_
 - ~~Where are we keeping/archiving the addresses of the old LLLs?~~
+- **DO:TUTORIAL**: https://forum.openzeppelin.com/t/openzeppelin-upgrades-step-by-step-tutorial-for-hardhat/3580
+- **DO:TUTORIAL**: https://forum.openzeppelin.com/t/uups-proxies-tutorial-solidity-javascript/7786
 
 # Other Notes
 
@@ -254,3 +256,33 @@ function _upgradeToAndCallUUPS(address newImplementation, bytes memory data) pri
   - dev's responsibility to implement this (else won't compile), checking for owner is simplest:
     - `function _authorizeUpgrade(address newImplementation) internal onlyOwner override {}`
   - can switch to a multi-sig scheme!
+- PPP inherits from `ERC1967Proxy.sol`
+
+```
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+
+contract UUPSProxy is ERC1967Proxy {
+    constructor(address _implementation, bytes memory _data) ERC1967Proxy(_implementation, _data)
+    payable {}
+}
+```
+
+- initializer: normal functions, configured to only execute once, e.g.:
+  - `function initialize(address initialOwner) initializer public { __Ownable_init(initialOwner); __UUPSUpgradeable_init(); }`
+- vulnerability: 2 owners: set thru PPP, set at LLL
+  - so: prevent calling the init'l'z'n f'n directly on the LLL
+  - e.g.: `constructor() { _disableInitializers(); }`
+- vulnerability: delegating calls to selfdestruct
+  - so: don't use `delegatecall()` in LLLs
+
+# OZ forums: OZ upgrades: step-by-step tutorial w/ HH
+
+- link: https://forum.openzeppelin.com/t/openzeppelin-upgrades-step-by-step-tutorial-for-hardhat/3580
+- good run-thru!
+
+# OZ forums: UUPS Proxies Tutoria (Solidity + JS)
+
+- link: https://forum.openzeppelin.com/t/uups-proxies-tutorial-solidity-javascript/7786
+- quicker run-thru
+- The original proxies included in OZ followed the TUP pattern
+- gotta be explicit: `await upgrades.deployProxy(MyTokenV1, { kind: 'uups' });`
