@@ -286,3 +286,41 @@ contract UUPSProxy is ERC1967Proxy {
 - quicker run-thru
 - The original proxies included in OZ followed the TUP pattern
 - gotta be explicit: `await upgrades.deployProxy(MyTokenV1, { kind: 'uups' });`
+
+# summary setup, from these articles
+
+```
+npm init -y
+npm install hardhat @nomiclabs/hardhat-ethers ethers
+npm install @openzeppelin/contracts-upgradeable @openzeppelin/hardhat-upgrades
+```
+
+```
+//  hardhat.config.js
+require('@nomiclabs/hardhat-ethers');
+require('@openzeppelin/hardhat-upgrades');
+/** @type import('hardhat/config').HardhatUserConfig */
+module.exports = {
+  solidity: "0.8.3",
+};
+```
+
+- // contracts/MyTokenV1.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+
+contract MyTokenV1 is Initializable, ERC20Upgradeable {
+function initialize() initializer public {
+\_\_ERC20_init("MyToken", "MTK");
+
+      _mint(msg.sender, 1000 * 10 ** decimals());
+    }
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() initializer {}
+
+}
