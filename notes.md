@@ -290,37 +290,188 @@ contract UUPSProxy is ERC1967Proxy {
 # summary setup, from these articles
 
 ```
+// shell commands
+mkdir mycontract && cd mycontract
 npm init -y
 npm install hardhat @nomiclabs/hardhat-ethers ethers
 npm install @openzeppelin/contracts-upgradeable @openzeppelin/hardhat-upgrades
 ```
 
+_...OR..._
+
 ```
-//  hardhat.config.js
-require('@nomiclabs/hardhat-ethers');
+// shell commands
+mkdir mycontract && cd mycontract
+npm init -y
+npm install --save-dev hardhat
+npm install --save-dev @openzeppelin/hardhat-upgrades
+npm install --save-dev @nomiclabs/hardhat-ethers ethers
+npm install --save-dev chai
+
+// so far, not: npm install @openzeppelin/contracts-upgradeable
+```
+
+```
+// hardhat.config.js
+const { alchemyApiKey, mnemonic } = require('./secrets.json');
+require("@nomiclabs/hardhat-ethers");
 require('@openzeppelin/hardhat-upgrades');
-/** @type import('hardhat/config').HardhatUserConfig */
+/**
+ * @type import('hardhat/config').HardhatUserConfig
+ */
 module.exports = {
-  solidity: "0.8.3",
+  solidity: "0.7.3",
+  networks: {
+    rinkeby: {
+      url: `https://eth-rinkeby.alchemyapi.io/v2/${alchemyApiKey}`,
+      accounts: {mnemonic: mnemonic}
+    }
+  }
 };
+
 ```
 
-- // contracts/MyTokenV1.sol
-
+```
+// contract/MyTokenV1.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-
-contract MyTokenV1 is Initializable, ERC20Upgradeable {
-function initialize() initializer public {
-\_\_ERC20_init("MyToken", "MTK");
-
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+contract MyTokenV1 is Initializable, ERC20Upgradeable, UUPSUpgradeable, OwnableUpgradeable {
+    function initialize() initializer public {
+      __ERC20_init("MyToken", "MTK");
+      __Ownable_init();
+      __UUPSUpgradeable_init();
       _mint(msg.sender, 1000 * 10 ** decimals());
     }
-
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
-
+    function _authorizeUpgrade(address) internal override onlyOwner {}
 }
+```
+
+**BoxV1.sol goes here**
+
+```
+// test/MyToken.test.js
+const { ethers, upgrades } = require('hardhat');
+describe('MyToken', function () {
+  it('deploys', async function () {
+    const MyTokenV1 = await ethers.getContractFactory('MyTokenV1');
+    await upgrades.deployProxy(MyTokenV1, { kind: 'uups' });
+  });
+});
+```
+
+```
+// scripts/deploy.js
+async function main() {
+    const Box = await ethers.getContractFactory("Box");
+    console.log("Deploying Box...");
+    const box = await upgrades.deployProxy(Box, [42], { initializer: 'store' });
+    console.log("Box deployed to:", box.address);
+}
+main()
+    .then(() => process.exit(0))
+    .catch(error => {
+      console.error(error);
+      process.exit(1);
+    });
+```
+
+```
+// shell commands
+npx hardhat run --network rinkeby scripts/deploy.js
+Deploying Box...
+Box deployed to: 0xFF60fd044dDed0E40B813DC7CE11Bed2CCEa501F
+npx hardhat console --network rinkeby
+> const Box = await ethers.getContractFactory("Box")
+undefined
+> const box = await Box.attach("0xFF60fd044dDed0E40B813DC7CE11Bed2CCEa501F")
+undefined
+> (await box.retrieve()).toString()
+'42'
+```
+
+**transfering AAA to new owner: Gnosis Safe 1-of-1 multisig...**
+
+```
+// scripts/transfer_ownership.js
+async function main() {
+  const gnosisSafe = '0x1c14600daeca8852BA559CC8EdB1C383B8825906';
+  console.log("Transferring ownership of ProxyAdmin...");
+  // The owner of the ProxyAdmin can upgrade our contracts
+  await upgrades.admin.transferProxyAdminOwnership(gnosisSafe);
+  console.log("Transferred ownership of ProxyAdmin to:", gnosisSafe);
+}
+```
+
+```
+// shell commands
+$ npx hardhat run --network rinkeby scripts/transfer_ownership.js
+Transferring ownership of ProxyAdmin...
+Transferred ownership of ProxyAdmin to: 0x1c14600daeca8852BA559CC8EdB1C383B8825906
+```
+
+```
+// contract/MyTokenV2.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+contract MyTokenV2 is Initializable, ERC20Upgradeable, UUPSUpgradeable, OwnableUpgradeable {
+    function initialize() initializer public {
+      __ERC20_init("MyToken", "MTK");
+      __Ownable_init();
+      __UUPSUpgradeable_init();
+      _mint(msg.sender, 1000 * 10 ** decimals());
+    }
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() initializer {}
+    function _authorizeUpgrade(address) internal override onlyOwner {}
+    function version2() public returns (string memory) {
+      return "version 2";
+    }
+}
+```
+
+**BoxV2.sol goes here**
+
+```
+// scripts/upgrade.js
+await upgrades.upgradeProxy(proxyAddress, MyTokenV2);
+```
+
+...OR...
+
+```
+// scripts/prepare_upgrade.js
+async function main() {
+  const proxyAddress = '0xFF60fd044dDed0E40B813DC7CE11Bed2CCEa501F';
+
+  const BoxV2 = await ethers.getContractFactory("BoxV2");
+  console.log("Preparing upgrade...");
+  const boxV2Address = await upgrades.prepareUpgrade(proxyAddress, BoxV2);
+  console.log("BoxV2 at:", boxV2Address);
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch(error => {
+    console.error(error);
+    process.exit(1);
+  });
+```
+
+```
+// shell commands
+$ npx hardhat run --network rinkeby scripts/prepare_upgrade.js
+Preparing upgrade...
+BoxV2 at: 0xE8f000B7ef04B7BfEa0a84e696f1b792aC526700
+```
+
+**DO:UPGRADE** via Gnosis Safe
