@@ -210,4 +210,47 @@ describe("Box", function()
 - unlike TUP: comparing `msg.sender` to admin on just the `_upgradeLogic()` call (not every call)
 - can mod upgrade mechanism, as upgrade LLL: add complexity, add voting, add timing
   - also: can nix upgrade mechanism, with an LLL upgrade
-- asdf
+- compatibility check: have signature of `proxiableUUID()`
+- LLL inherits from `UUPSUpgradeable.sol`, which provides `proxiableUUID()`
+  - compatibility check (has to have this name, per the standard)
+  - returns storage slot for LLL address
+  - calling this in new LLL is first step, gating rest of migration/upgrade
+
+```
+function proxiableUUID() external view virtual notDelegated returns (bytes32) {
+  return ERC1967Utils.IMPLEMENTATION_SLOT; // conformal to the ERC-1967 standard
+}
+```
+
+- LLL inherits from `UUPSUpgradeable.sol`, which provides `updateToAndCall()`
+  - (can be called anything, acutally)
+  - a public function, but with `onlyProxy` modifier
+
+```
+function upgradeToAndCall(address newImplementation, bytes memory data) public payable virtual onlyProxy {
+    // checks whether the upgrade can proceed
+    _authorizeUpgrade(newImplementation);
+    // upgrade to the new implementation
+    _upgradeToAndCallUUPS(newImplementation, data);
+}
+
+function _authorizeUpgrade(address newImplementation) internal virtual;
+
+function _upgradeToAndCallUUPS(address newImplementation, bytes memory data) private {
+    // checks whether the new implementation implements ERC-1822
+    try IERC1822Proxiable(newImplementation).proxiableUUID() returns (bytes32 slot) {
+        if (slot != ERC1967Utils.IMPLEMENTATION_SLOT) {
+            revert UUPSUnsupportedProxiableUUID(slot);
+        }
+        ERC1967Utils.upgradeToAndCall(newImplementation, data);
+    } catch {
+        // The implementation is not UUPS
+        revert ERC1967Utils.ERC1967InvalidImplementation(newImplementation);
+    }
+}
+```
+
+- LLL inherits from `UUPSUpgradeable.sol`, which provides `_authorizeUpgrade()`
+  - dev's responsibility to implement this (else won't compile), checking for owner is simplest:
+    - `function _authorizeUpgrade(address newImplementation) internal onlyOwner override {}`
+  - can switch to a multi-sig scheme!
