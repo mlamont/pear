@@ -183,6 +183,7 @@ describe("Box", function()
 
 - Does V2 need `initialize()`?
   - **DO:TEST**: making V2s w/o this f'n and see if anything breaks
+  - **DO:TEST**: make V2 with this f'n that does something, and see if it changes state var.s
 - How to end upgradeability?
   - **DO:INV**
 - Where do I find all 3 contracts, both in local & testnet blockchains?
@@ -193,8 +194,14 @@ describe("Box", function()
   - ~~possibly do `npm uninstall ...` then `npm install ...`~~
   - _installed earlier versions of these packages_
 - ~~Where are we keeping/archiving the addresses of the old LLLs?~~
-- **DO:TUTORIAL**: https://forum.openzeppelin.com/t/openzeppelin-upgrades-step-by-step-tutorial-for-hardhat/3580
-- **DO:TUTORIAL**: https://forum.openzeppelin.com/t/uups-proxies-tutorial-solidity-javascript/7786
+- ~~did tutorial: https://forum.openzeppelin.com/t/openzeppelin-upgrades-step-by-step-tutorial-for-hardhat/3580~~
+- ~~did tutorial: https://forum.openzeppelin.com/t/uups-proxies-tutorial-solidity-javascript/7786~~
+- Can I repeat upgrading reliably?
+  - **DO:TUTORIAL**: my section: summary recipe
+- Do I need to override `proxiableUUID()` & `upgradeToAndCall()`?
+  - **DO:INV**: `proxiableUUID()` & `upgradeToAndCall()` from `@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol`
+- Can I change PPP ownership from the deploying HH-address?
+  - **DO:TEST**: establish onlyOwner actions, then `initialize()`: `initialize(address initialOwner)` + `__Ownable_init(initialOwner)`
 
 # Other Notes
 
@@ -287,7 +294,7 @@ contract UUPSProxy is ERC1967Proxy {
 - The original proxies included in OZ followed the TUP pattern
 - gotta be explicit: `await upgrades.deployProxy(MyTokenV1, { kind: 'uups' });`
 
-# summary setup, from these articles
+# summary recipe
 
 ## install & configure: shell, hardhat.config.js
 
@@ -297,14 +304,18 @@ npm init -y
 npm install --save-dev hardhat
 npm install --save-dev @openzeppelin/hardhat-upgrades
 npm install --save-dev @nomicfoundation/hardhat-ethers ethers
+npm install --save-dev @nomicfoundation/hardhat-ethers@3.1.0 ethers
 npm install --save-dev chai
 npm install --save-dev @openzeppelin/contracts-upgradeable
+npm install --save-dev @nomicfoundation/hardhat-verify
+npm install --save-dev @nomicfoundation/hardhat-verify@2.1.1
 ```
 
 ```
 const { alchemyApiKey, mnemonic } = require('./secrets.json');
 require("@nomicfoundation/hardhat-ethers");
 require('@openzeppelin/hardhat-upgrades');
+require("@nomicfoundation/hardhat-verify");
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -320,6 +331,16 @@ module.exports = {
 ```
 
 ## code V1
+
+### notes
+
+- use `Initializable` OZ base contract + `initializer` modifier
+- use `initialize()` w/ `initializer`, init'g state var.s here that were declared at top
+- have `constructor()` w/ `initializer` + `_disableInitializers()`
+- UUPS proxies rely on `_authorizeUpgrade()` to be overridden to include access restriction to the upgrade mechanism... simplest:
+  - `function _authorizeUpgrade(address newImplementation) internal onlyOwner override {}`
+- extend `UUPSUpgradeable.sol`, which provides `proxiableUUID()`
+- PPP inherits from `ERC1967Proxy.sol`
 
 ### MyTokenV1.sol: contract/MyTokenV1.sol
 
@@ -374,16 +395,30 @@ describe('MyToken', function () {
     await upgrades.deployProxy(MyTokenV1, { kind: 'uups' });
   });
 });
+
+const  expect  = require("chai");
+describe("Box", function()
+  it('works', async () => {
+    const Box = await ethers.getContractFactory("Box");
+    const BoxV2 = await ethers.getContractFactory("BoxV2");
+    const instance = await upgrades.deployProxy(Box, [42]);
+    const upgraded = await upgrades.upgradeProxy(await instance.getAddress(), BoxV2);
+    const value = await upgraded.value();
+    expect(value.toString()).to.equal('42');
+  });
+);
 ```
 
 ## Deploy: scripts/deploy.js, shell
 
 ```
+const { ethers, upgrades } = require('hardhat');
 async function main() {
     const Box = await ethers.getContractFactory("Box");
     console.log("Deploying Box...");
     const box = await upgrades.deployProxy(Box, [42], { initializer: 'store' });
-    console.log("Box deployed to:", box.address);
+    await box.waitForDeployment();
+    console.log('Box deployed to:', await box.getAddress()); // (PPP)
 }
 main()
     .then(() => process.exit(0))
@@ -404,6 +439,12 @@ undefined
 undefined
 > (await box.retrieve()).toString()
 '42'
+```
+
+## Verify: shell
+
+```
+npx hardhat verify --network mainnet PROXY_ADDRESS
 ```
 
 ## transfer AAA ownership: scripts/transfer_ownership.js, shell
@@ -479,10 +520,20 @@ contract BoxV2 {
 
 ## Upgrade
 
-### Direct Upgrade: scripts/upgrade.js
+### Direct Upgrade: scripts/upgrade_box.js, shell
 
 ```
-await upgrades.upgradeProxy(proxyAddress, MyTokenV2);
+const { ethers, upgrades } = require('hardhat');
+async function main () {
+  const BoxV2 = await ethers.getContractFactory('BoxV2');
+  console.log('Upgrading Box...');
+  await upgrades.upgradeProxy('0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0', BoxV2);
+  console.log('Box upgraded'); /// PPP address remains
+}
+```
+
+```
+npx hardhat run --network localhost scripts/upgrade_box.js
 ```
 
 ### Prepared Upgrade: scripts/prepare_upgrade.js, shell, Gnosis Safe
