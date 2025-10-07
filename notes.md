@@ -289,30 +289,19 @@ contract UUPSProxy is ERC1967Proxy {
 
 # summary setup, from these articles
 
-```
-// shell commands
-mkdir mycontract && cd mycontract
-npm init -y
-npm install hardhat @nomiclabs/hardhat-ethers ethers
-npm install @openzeppelin/contracts-upgradeable @openzeppelin/hardhat-upgrades
-```
-
-_...OR..._
+## install & configure: shell, hardhat.config.js
 
 ```
-// shell commands
 mkdir mycontract && cd mycontract
 npm init -y
 npm install --save-dev hardhat
 npm install --save-dev @openzeppelin/hardhat-upgrades
 npm install --save-dev @nomiclabs/hardhat-ethers ethers
 npm install --save-dev chai
-
-// so far, not: npm install @openzeppelin/contracts-upgradeable
+npm install --save-dev @openzeppelin/contracts-upgradeable
 ```
 
 ```
-// hardhat.config.js
 const { alchemyApiKey, mnemonic } = require('./secrets.json');
 require("@nomiclabs/hardhat-ethers");
 require('@openzeppelin/hardhat-upgrades');
@@ -328,11 +317,13 @@ module.exports = {
     }
   }
 };
-
 ```
 
+## code V1
+
+### MyTokenV1.sol: contract/MyTokenV1.sol
+
 ```
-// contract/MyTokenV1.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -352,10 +343,30 @@ contract MyTokenV1 is Initializable, ERC20Upgradeable, UUPSUpgradeable, OwnableU
 }
 ```
 
-**BoxV1.sol goes here**
+### Box.sol: contradts/Box.sol
 
 ```
-// test/MyToken.test.js
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.7.0;
+contract Box {
+    uint256 private value;
+    // Emitted when the stored value changes
+    event ValueChanged(uint256 newValue);
+    // Stores a new value in the contract
+    function store(uint256 newValue) public {
+        value = newValue;
+        emit ValueChanged(newValue);
+    }
+    // Reads the last stored value
+    function retrieve() public view returns (uint256) {
+        return value;
+    }
+}
+```
+
+## Test: test/MyToken.test.js
+
+```
 const { ethers, upgrades } = require('hardhat');
 describe('MyToken', function () {
   it('deploys', async function () {
@@ -365,8 +376,9 @@ describe('MyToken', function () {
 });
 ```
 
+## Deploy: scripts/deploy.js, shell
+
 ```
-// scripts/deploy.js
 async function main() {
     const Box = await ethers.getContractFactory("Box");
     console.log("Deploying Box...");
@@ -382,7 +394,6 @@ main()
 ```
 
 ```
-// shell commands
 npx hardhat run --network rinkeby scripts/deploy.js
 Deploying Box...
 Box deployed to: 0xFF60fd044dDed0E40B813DC7CE11Bed2CCEa501F
@@ -395,10 +406,9 @@ undefined
 '42'
 ```
 
-**transfering AAA to new owner: Gnosis Safe 1-of-1 multisig...**
+## transfer AAA ownership: scripts/transfer_ownership.js, shell
 
 ```
-// scripts/transfer_ownership.js
 async function main() {
   const gnosisSafe = '0x1c14600daeca8852BA559CC8EdB1C383B8825906';
   console.log("Transferring ownership of ProxyAdmin...");
@@ -409,14 +419,16 @@ async function main() {
 ```
 
 ```
-// shell commands
 $ npx hardhat run --network rinkeby scripts/transfer_ownership.js
 Transferring ownership of ProxyAdmin...
 Transferred ownership of ProxyAdmin to: 0x1c14600daeca8852BA559CC8EdB1C383B8825906
 ```
 
+## code V2
+
+### MyTokenV2.sol: contract/MyTokenV2.sol
+
 ```
-// contract/MyTokenV2.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -439,17 +451,43 @@ contract MyTokenV2 is Initializable, ERC20Upgradeable, UUPSUpgradeable, OwnableU
 }
 ```
 
-**BoxV2.sol goes here**
+### BoxV2.sol: contracts/BoxV2.sol
 
 ```
-// scripts/upgrade.js
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.7.0;
+contract BoxV2 {
+    uint256 private value;
+    // Emitted when the stored value changes
+    event ValueChanged(uint256 newValue);
+    // Stores a new value in the contract
+    function store(uint256 newValue) public {
+        value = newValue;
+        emit ValueChanged(newValue);
+    }
+    // Reads the last stored value
+    function retrieve() public view returns (uint256) {
+        return value;
+    }
+    // Increments the stored value by 1
+    function increment() public {
+        value = value + 1;
+        emit ValueChanged(value);
+    }
+}
+```
+
+## Upgrade
+
+### Direct Upgrade: scripts/upgrade.js
+
+```
 await upgrades.upgradeProxy(proxyAddress, MyTokenV2);
 ```
 
-...OR...
+### Prepared Upgrade: scripts/prepare_upgrade.js, shell, Gnosis Safe
 
 ```
-// scripts/prepare_upgrade.js
 async function main() {
   const proxyAddress = '0xFF60fd044dDed0E40B813DC7CE11Bed2CCEa501F';
 
@@ -468,10 +506,7 @@ main()
 ```
 
 ```
-// shell commands
 $ npx hardhat run --network rinkeby scripts/prepare_upgrade.js
 Preparing upgrade...
 BoxV2 at: 0xE8f000B7ef04B7BfEa0a84e696f1b792aC526700
 ```
-
-**DO:UPGRADE** via Gnosis Safe
