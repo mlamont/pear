@@ -296,14 +296,14 @@ mkdir mycontract && cd mycontract
 npm init -y
 npm install --save-dev hardhat
 npm install --save-dev @openzeppelin/hardhat-upgrades
-npm install --save-dev @nomiclabs/hardhat-ethers ethers
+npm install --save-dev @nomicfoundation/hardhat-ethers ethers
 npm install --save-dev chai
 npm install --save-dev @openzeppelin/contracts-upgradeable
 ```
 
 ```
 const { alchemyApiKey, mnemonic } = require('./secrets.json');
-require("@nomiclabs/hardhat-ethers");
+require("@nomicfoundation/hardhat-ethers");
 require('@openzeppelin/hardhat-upgrades');
 /**
  * @type import('hardhat/config').HardhatUserConfig
