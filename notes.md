@@ -301,15 +301,14 @@ contract UUPSProxy is ERC1967Proxy {
 
 ```
 mkdir mycontract && cd mycontract
-npm init -y
-npm install --save-dev hardhat
-npm install --save-dev @openzeppelin/hardhat-upgrades
-npm install --save-dev @nomicfoundation/hardhat-ethers ethers
-npm install --save-dev @nomicfoundation/hardhat-ethers@3.1.0 ethers
+/ npm init -y
+/ npm install --save-dev hardhat@2
+/ npm install --save-dev @openzeppelin/hardhat-upgrades
+/ npm install --save-dev ethers
+/ npm install --save-dev @nomicfoundation/hardhat-ethers@3
+/ npm install --save-dev @openzeppelin/contracts-upgradeable
+/ npm install --save-dev @nomicfoundation/hardhat-verify@2
 npm install --save-dev chai
-npm install --save-dev @openzeppelin/contracts-upgradeable
-npm install --save-dev @nomicfoundation/hardhat-verify
-npm install --save-dev @nomicfoundation/hardhat-verify@2.1.1
 ```
 
 ```
