@@ -179,7 +179,7 @@ describe("Box", function()
 - PPP uses 'unstructured storage': semi-random slots used for PPP, avoiding collisions with LLL's storage slots
 - It's on the user to have new LLLs extend previous LLLs, basically: new LLLs append state variables to old LLLs
 
-# Open Questions
+# OPEN QUESTIONS
 
 - Does V2 need `initialize()`?
   - **DO:TEST**: making V2s w/o this f'n and see if anything breaks
@@ -294,7 +294,7 @@ contract UUPSProxy is ERC1967Proxy {
 - The original proxies included in OZ followed the TUP pattern
 - gotta be explicit: `await upgrades.deployProxy(MyTokenV1, { kind: 'uups' });`
 
-# summary recipe
+# SUMMARY RECIPE
 
 ## install & configure: shell, hardhat.config.js
 
