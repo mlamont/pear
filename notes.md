@@ -198,8 +198,9 @@ describe("Box", function()
 - ~~did tutorial: https://forum.openzeppelin.com/t/uups-proxies-tutorial-solidity-javascript/7786~~
 - Can I repeat upgrading reliably?
   - **DO:TUTORIAL**: my section: summary recipe
-- Do I need to override `proxiableUUID()` & `upgradeToAndCall()`?
-  - **DO:INV**: `proxiableUUID()` & `upgradeToAndCall()` from `@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol`
+- ~~Do I need to override `proxiableUUID()` & `upgradeToAndCall()`?~~
+  - ~~did INV: `proxiableUUID()` & `upgradeToAndCall()` from `@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol`~~
+  - _just need to implement, and thus override, `_authorizeUpgrade()`, with no need to override any other function_
 - Can I change PPP ownership from the deploying HH-address?
   - **DO:TEST**: establish onlyOwner actions, then `initialize()`: `initialize(address initialOwner)` + `__Ownable_init(initialOwner)`
 
